@@ -112,9 +112,12 @@ export default function LandingPage() {
 
       <section className="w-full bg-muted/30 py-16 md:py-24">
         <div className="container mx-auto px-5 md:px-8">
-          <h2 className="mb-12 text-center text-3xl font-bold tracking-tight md:text-4xl">
+          <h2 className="mb-2 text-center text-3xl font-bold tracking-tight md:text-4xl">
             What Our Users Say
           </h2>
+          <p className="mb-12 text-center text-sm text-muted-foreground">
+            Sample testimonials for demonstration purposes
+          </p>
           <div className="mx-auto grid max-w-6xl grid-cols-1 gap-5 md:grid-cols-3">
             {testimonial.map((testimonial, index) => (
               <Card key={index} className="border-border/70 bg-background/90 shadow-sm transition-transform duration-300 hover:-translate-y-1">
@@ -168,7 +171,7 @@ export default function LandingPage() {
           </div>
 
           <div className="max-w-3xl mx-auto">
-            <Accordion type="single" collapsible className="w-full">
+            <Accordion type="single" collapsible defaultValue="item-0" className="w-full">
               {faqs.map((faq, index) => (
                 <AccordionItem key={index} value={`item-${index}`}>
                   <AccordionTrigger className="text-left">
