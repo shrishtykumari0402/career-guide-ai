@@ -147,3 +147,97 @@ Return ONLY JSON:
     throw new Error("Failed to generate quiz questions");
   }
 }
+
+export async function saveQuizResult(questions, answers, score) {
+  const { userId } = await auth();
+
+  if (!userId) throw new Error("Unauthorized");
+
+  const user = await db.user.findUnique({
+    where: { clerkUserId: userId },
+  });
+
+  if (!user) throw new Error("User not found");
+
+  const questionResults = questions.map((q, index) => ({
+    question: q.question,
+    answer: q.correctAnswer,
+    userAnswer: answers[index],
+    isCorrect: q.correctAnswer === answers[index],
+    explanation: q.explanation,
+  }));
+
+  const wrongAnswers = questionResults.filter((q) => !q.isCorrect);
+
+  let improvementTip = null;
+
+  if (wrongAnswers.length > 0) {
+    const wrongQuestionsText = wrongAnswers
+      .map(
+        (q) =>
+          `Question:${q.question}
+Correct:${q.answer}
+User:${q.userAnswer}`
+      )
+      .join("\n\n");
+
+    const improvementPrompt = `
+The user needs improvement in ${user.industry}.
+
+Questions:
+
+${wrongQuestionsText}
+
+Give a short learning suggestion under 2 sentences.
+`;
+
+    try {
+      const tipResult = await generateContentWithRetry(improvementPrompt);
+
+      improvementTip = tipResult.response.text().trim();
+    } catch (error) {
+      console.error("Error generating improvement tip:", error);
+    }
+  }
+
+  try {
+    const assessment = await db.assessment.create({
+      data: {
+        userId: user.id,
+        quizScore: score,
+        questions: questionResults,
+        category: "Technical",
+        improvementTip,
+      },
+    });
+
+    return assessment;
+  } catch (error) {
+    console.error("Error saving quiz result:", error);
+
+    throw new Error("Failed to save quiz result");
+  }
+}
+
+export async function getAssessments() {
+  const { userId } = await auth();
+
+  if (!userId) throw new Error("Unauthorized");
+
+  const user = await db.user.findUnique({
+    where: { clerkUserId: userId },
+  });
+
+  if (!user) throw new Error("User not found");
+
+  try {
+    return await db.assessment.findMany({
+      where: { userId: user.id },
+      orderBy: { createdAt: "asc" },
+    });
+  } catch (error) {
+    console.error("Error fetching assessments:", error);
+
+    throw new Error("Failed to fetch assessments");
+  }
+}
