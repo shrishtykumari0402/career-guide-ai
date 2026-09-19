@@ -157,7 +157,7 @@ const DashboardView = ({ insights }) => {
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={salaryData}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
+                   <XAxis dataKey="name" interval={0} angle={-20} textAnchor="end" height={70} />
                 <YAxis />
                 <Tooltip
                   content={({ active, payload, label }) => {
