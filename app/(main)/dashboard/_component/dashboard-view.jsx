@@ -71,7 +71,7 @@ const DashboardView = ({ insights }) => {
   const lastUpdatedDate = format(new Date(insights.lastUpdated), "dd/MM/yyyy");
   const nextUpdateDistance = formatDistanceToNow(
     new Date(insights.nextUpdate),
-    { addSuffix: true }
+    { addSuffix: true },
   );
 
   return (
@@ -121,7 +121,7 @@ const DashboardView = ({ insights }) => {
             <div className="text-2xl font-bold">{insights.demandLevel}</div>
             <div
               className={`h-2 w-full rounded-full mt-2 ${getDemandLevelColor(
-                insights.demandLevel
+                insights.demandLevel,
               )}`}
             />
           </CardContent>
@@ -155,9 +155,19 @@ const DashboardView = ({ insights }) => {
         <CardContent>
           <div className="h-[400px]">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={salaryData}>
+              <BarChart
+                data={salaryData}
+                margin={{ top: 10, right: 20, left: 40, bottom: 10 }}
+              >
                 <CartesianGrid strokeDasharray="3 3" />
-                   <XAxis dataKey="name" interval={0} angle={-20} textAnchor="end" height={70} />
+                <XAxis
+                  dataKey="name"
+                  interval={0}
+                  angle={-20}
+                  textAnchor="end"
+                  height={110}
+                  tick={{ fontSize: 12 }}
+                />
                 <YAxis />
                 <Tooltip
                   content={({ active, payload, label }) => {
@@ -176,7 +186,10 @@ const DashboardView = ({ insights }) => {
                     return null;
                   }}
                 />
-                <Legend />
+                <Legend
+                  verticalAlign="bottom"
+                  wrapperStyle={{ paddingTop: 20 }}
+                />
                 <Bar dataKey="min" fill="#94a3b8" name="Min Salary (K)" />
                 <Bar dataKey="median" fill="#64748b" name="Median Salary (K)" />
                 <Bar dataKey="max" fill="#475569" name="Max Salary (K)" />
