@@ -32,6 +32,16 @@ body {
   line-height: 1.45;
 }
 
+.resume-document .wmde-markdown {
+  min-height: inherit;
+  padding: 0;
+  background: #ffffff !important;
+  color: #17202a !important;
+  font-family: Arial, Helvetica, sans-serif !important;
+  font-size: inherit !important;
+  line-height: inherit !important;
+}
+
 .resume-document h1 {
   margin: 0 0 0.2rem;
   color: #17202a;
@@ -40,6 +50,19 @@ body {
   font-weight: 700;
   letter-spacing: 0.02em;
   text-align: center;
+}
+
+.resume-document .wmde-markdown h1,
+.resume-document .wmde-markdown h2,
+.resume-document .wmde-markdown h3,
+.resume-document .wmde-markdown p,
+.resume-document .wmde-markdown li,
+.resume-document .wmde-markdown span {
+  color: #17202a !important;
+}
+
+.resume-document .wmde-markdown a {
+  color: #17202a !important;
 }
 
 .resume-document h1 + p {
@@ -92,9 +115,6 @@ body {
 }
 
 .resume-document ul {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0 1.5rem;
   margin: 0.25rem 0 0.55rem;
   padding-left: 1rem;
 }
@@ -131,9 +151,6 @@ body {
     padding: 32px 28px;
   }
 
-  .resume-document ul {
-    display: block;
-  }
 }
 
 @media print {
