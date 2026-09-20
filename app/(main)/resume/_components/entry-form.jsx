@@ -8,6 +8,7 @@ import { format, parse } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import {
   Card,
   CardContent,
@@ -26,6 +27,28 @@ const formatDisplayDate = (dateString) => {
 
 export function EntryForm({ type, entries, onChange }) {
   const [isAdding, setIsAdding] = useState(false);
+  const fieldCopy = {
+    Experience: {
+      title: "Job title",
+      organization: "Company",
+      description: "Describe your responsibilities and achievements",
+    },
+    Education: {
+      title: "Degree or certification",
+      organization: "School or institution",
+      description: "Add relevant coursework, honors, or accomplishments",
+    },
+    Project: {
+      title: "Project name",
+      organization: "Company, client, or personal project",
+      description: "Describe the project, your contribution, and its impact",
+    },
+  }[type] || {
+    title: "Title",
+    organization: "Organization",
+    description: "Describe this entry",
+  };
+  const formId = type.toLowerCase();
 
   const {
     register,
@@ -72,8 +95,13 @@ export function EntryForm({ type, entries, onChange }) {
         {entries.map((item, index) => (
           <Card key={index}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                {item.title} @ {item.organization}
+              <CardTitle className="text-base font-semibold">
+                {item.title}
+                {item.organization && (
+                  <span className="font-normal text-muted-foreground">
+                    {` - ${item.organization}`}
+                  </span>
+                )}
               </CardTitle>
               <Button
                 variant="outline"
@@ -100,14 +128,16 @@ export function EntryForm({ type, entries, onChange }) {
 
       {isAdding && (
         <Card>
-          <CardHeader>
-            <CardTitle>Add {type}</CardTitle>
+          <CardHeader className="border-b bg-muted/30">
+            <CardTitle className="text-lg">Add {type} details</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+          <CardContent className="space-y-5 pt-6">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div className="space-y-2">
+                <Label htmlFor={`${formId}-title`}>{fieldCopy.title}</Label>
                 <Input
-                  placeholder="Title/Position"
+                  id={`${formId}-title`}
+                  placeholder={fieldCopy.title}
                   {...register("title")}
                   error={errors.title}
                 />
@@ -116,8 +146,12 @@ export function EntryForm({ type, entries, onChange }) {
                 )}
               </div>
               <div className="space-y-2">
+                <Label htmlFor={`${formId}-organization`}>
+                  {fieldCopy.organization}
+                </Label>
                 <Input
-                  placeholder="Organization/Company"
+                  id={`${formId}-organization`}
+                  placeholder={fieldCopy.organization}
                   {...register("organization")}
                   error={errors.organization}
                 />
@@ -129,9 +163,11 @@ export function EntryForm({ type, entries, onChange }) {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div className="space-y-2">
+                <Label htmlFor={`${formId}-start-date`}>Start date</Label>
                 <Input
+                  id={`${formId}-start-date`}
                   type="month"
                   {...register("startDate")}
                   error={errors.startDate}
@@ -143,7 +179,9 @@ export function EntryForm({ type, entries, onChange }) {
                 )}
               </div>
               <div className="space-y-2">
+                <Label htmlFor={`${formId}-end-date`}>End date</Label>
                 <Input
+                  id={`${formId}-end-date`}
                   type="month"
                   {...register("endDate")}
                   disabled={current}
@@ -157,10 +195,10 @@ export function EntryForm({ type, entries, onChange }) {
               </div>
             </div>
 
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center gap-2 rounded-md border bg-muted/20 px-3 py-2">
               <input
                 type="checkbox"
-                id="current"
+                id={`${formId}-current`}
                 {...register("current")}
                 onChange={(e) => {
                   setValue("current", e.target.checked);
@@ -169,16 +207,23 @@ export function EntryForm({ type, entries, onChange }) {
                   }
                 }}
               />
-              <label htmlFor="current">Current {type}</label>
+              <label htmlFor={`${formId}-current`} className="text-sm font-medium">
+                This is my current {type.toLowerCase()}
+              </label>
             </div>
 
             <div className="space-y-2">
+              <Label htmlFor={`${formId}-description`}>Description</Label>
               <Textarea
-                placeholder={`Description of your ${type.toLowerCase()}`}
-                className="h-32"
+                id={`${formId}-description`}
+                placeholder={fieldCopy.description}
+                className="min-h-32 resize-y"
                 {...register("description")}
                 error={errors.description}
               />
+              <p className="text-xs text-muted-foreground">
+                Use concise bullet-style statements and include measurable results where possible.
+              </p>
               {errors.description && (
                 <p className="text-sm text-red-500">
                   {errors.description.message}
