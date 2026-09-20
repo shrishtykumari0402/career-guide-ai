@@ -15,7 +15,7 @@ export function entriesToMarkdown(entries, type) {
           .map((point) => `- ${point.trim()}`)
           .join("\n");
 
-        return `### ${entry.title}${entry.organization ? ` | ${entry.organization}` : ""}\n*${dateRange}*\n\n${bulletPoints}`;
+        return `### ${entry.title}${entry.organization ? ` | ${entry.organization}` : ""}\n<span class="resume-date">${dateRange}</span>\n\n${bulletPoints}`;
       })
       .join("\n\n")
   );

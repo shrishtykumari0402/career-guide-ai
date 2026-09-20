@@ -96,10 +96,15 @@ export default function ResumeBuilder({ initialContent }) {
 
   const getCombinedContent = () => {
     const { summary, skills, experience, education, projects } = formValues;
+    const skillList = skills
+      ?.split(/,|\n/)
+      .map((skill) => skill.trim())
+      .filter(Boolean);
+
     return [
       getContactMarkdown(),
       summary && `## Professional Summary\n\n${summary}`,
-      skills && `## Skills\n\n${skills}`,
+      skillList?.length && `## Skills\n\n${skillList.join("  |  ")}`,
       entriesToMarkdown(experience, "Work Experience"),
       entriesToMarkdown(education, "Education"),
       entriesToMarkdown(projects, "Projects"),
@@ -185,7 +190,7 @@ export default function ResumeBuilder({ initialContent }) {
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
           <TabsTrigger value="edit">Form</TabsTrigger>
-          <TabsTrigger value="preview">Markdown</TabsTrigger>
+          <TabsTrigger value="preview">Preview</TabsTrigger>
         </TabsList>
 
         <TabsContent value="edit">
@@ -404,7 +409,7 @@ export default function ResumeBuilder({ initialContent }) {
             </div>
           )}
           <div style={{ position: "absolute", left: "-9999px" }}>
-            <div className="resume-document" id="resume-pdf">
+            <div className="resume-document resume-pdf-document" id="resume-pdf">
               <MDEditor.Markdown source={previewContent || "# Your Name"} />
             </div>
           </div>
