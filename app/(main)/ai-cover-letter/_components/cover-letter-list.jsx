@@ -71,8 +71,9 @@ export default function CoverLetterList({ coverLetters }) {
                     variant="outline"
                     size="icon"
                     onClick={() => router.push(`/ai-cover-letter/${letter.id}`)}
+                    title="Edit cover letter"
                   >
-                    <Eye className="h-4 w-4" />
+                    <Edit2 className="h-4 w-4" />
                   </Button>
                   <AlertDialogTrigger asChild>
                     <Button variant="outline" size="icon">

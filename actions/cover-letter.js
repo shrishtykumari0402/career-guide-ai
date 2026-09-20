@@ -3,6 +3,7 @@
 import { db } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { revalidatePath } from "next/cache";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
@@ -113,10 +114,36 @@ export async function deleteCoverLetter(id) {
 
   if (!user) throw new Error("User not found");
 
-  return await db.coverLetter.delete({
+  const deletedLetter = await db.coverLetter.delete({
     where: {
       id,
       userId: user.id,
     },
   });
+
+  revalidatePath("/ai-cover-letter");
+  revalidatePath(`/ai-cover-letter/${id}`);
+  return deletedLetter;
+}
+
+export async function updateCoverLetter(id, content) {
+  const { userId } = await auth();
+  if (!userId) throw new Error("Unauthorized");
+
+  const user = await db.user.findUnique({
+    where: { clerkUserId: userId },
+    select: { id: true },
+  });
+
+  if (!user) throw new Error("User not found");
+  if (!content?.trim()) throw new Error("Cover letter content cannot be empty");
+
+  const updatedLetter = await db.coverLetter.update({
+    where: { id, userId: user.id },
+    data: { content: content.trim(), status: "completed" },
+  });
+
+  revalidatePath("/ai-cover-letter");
+  revalidatePath(`/ai-cover-letter/${id}`);
+  return updatedLetter;
 }

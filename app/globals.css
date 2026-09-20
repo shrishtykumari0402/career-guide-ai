@@ -141,6 +141,43 @@ body {
   box-shadow: none;
 }
 
+.cover-letter-paper {
+  width: min(100%, 794px);
+  min-height: 900px;
+  margin: 0 auto;
+  padding: 64px 72px;
+  background: #ffffff;
+  color: #17202a;
+  box-shadow: 0 12px 35px rgb(15 23 42 / 12%);
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.cover-letter-paper .wmde-markdown {
+  background: #ffffff !important;
+  color: #17202a !important;
+  font-family: inherit !important;
+  font-size: inherit !important;
+  line-height: inherit !important;
+}
+
+.cover-letter-paper .wmde-markdown h1,
+.cover-letter-paper .wmde-markdown h2,
+.cover-letter-paper .wmde-markdown h3,
+.cover-letter-paper .wmde-markdown p,
+.cover-letter-paper .wmde-markdown li,
+.cover-letter-paper .wmde-markdown span {
+  color: #17202a !important;
+}
+
+@media (max-width: 640px) {
+  .cover-letter-paper {
+    min-height: auto;
+    padding: 32px 28px;
+  }
+}
+
 @media (max-width: 640px) {
   .resume-preview-shell {
     padding: 0.75rem;
