@@ -1,4 +1,3 @@
-// Helper function to convert entries to markdown
 export function entriesToMarkdown(entries, type) {
   if (!entries?.length) return "";
 
@@ -13,10 +12,10 @@ export function entriesToMarkdown(entries, type) {
         const bulletPoints = entry.description
           .split(/\n+/)
           .filter(Boolean)
-          .map((point) => `• ${point.trim()}`)
+          .map((point) => `- ${point.trim()}`)
           .join("\n");
 
-        return `### ${entry.title}${entry.organization ? ` @ ${entry.organization}` : ""}\n${dateRange}\n\n${bulletPoints}`;
+        return `### ${entry.title}${entry.organization ? ` | ${entry.organization}` : ""}\n*${dateRange}*\n\n${bulletPoints}`;
       })
       .join("\n\n")
   );

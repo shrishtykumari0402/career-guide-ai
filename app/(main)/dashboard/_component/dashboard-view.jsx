@@ -28,8 +28,11 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Plus, Check } from "lucide-react";
 
-const DashboardView = ({ insights }) => {
+const DashboardView = ({ insights, profiles, activeProfile }) => {
   // Transform salary data for the chart
   const salaryData = insights.salaryRanges.map((range) => ({
     name: range.role,
@@ -76,7 +79,26 @@ const DashboardView = ({ insights }) => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+        <div>
+          <p className="text-sm text-muted-foreground">Active career track</p>
+          <h1 className="text-3xl font-bold capitalize">{activeProfile?.name}</h1>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          {profiles.map((profile) => (
+            <Link key={profile.id} href={`/dashboard?profileId=${profile.id}`}>
+              <Button variant={profile.id === activeProfile?.id ? "default" : "outline"} size="sm">
+                {profile.id === activeProfile?.id && <Check className="mr-1 h-3.5 w-3.5" />}
+                {profile.name}
+              </Button>
+            </Link>
+          ))}
+          <Link href="/onboarding?new=1">
+            <Button variant="outline" size="sm"><Plus className="mr-1 h-3.5 w-3.5" /> New track</Button>
+          </Link>
+        </div>
+      </div>
+      <div className="flex justify-end">
         <Badge variant="outline">Last updated: {lastUpdatedDate}</Badge>
       </div>
 

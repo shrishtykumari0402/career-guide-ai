@@ -69,7 +69,7 @@ export async function updateUser(data) {
           });
         }
 
-        // Now update the user
+        // Keep the legacy user fields for existing features while storing each track separately.
         const updatedUser = await tx.user.update({
           where: {
             id: user.id,
@@ -82,7 +82,30 @@ export async function updateUser(data) {
           },
         });
 
-        return { updatedUser, industryInsight };
+        const profile = await tx.careerProfile.upsert({
+          where: {
+            userId_industry: {
+              userId: user.id,
+              industry: data.industry,
+            },
+          },
+          update: {
+            name: data.profileName || data.subIndustry || data.industry,
+            experience: data.experience,
+            bio: data.bio,
+            skills: data.skills,
+          },
+          create: {
+            userId: user.id,
+            name: data.profileName || data.subIndustry || data.industry,
+            industry: data.industry,
+            experience: data.experience,
+            bio: data.bio,
+            skills: data.skills,
+          },
+        });
+
+        return { updatedUser, industryInsight, profile };
       },
       {
         timeout: 10000, // default: 5000
@@ -90,7 +113,7 @@ export async function updateUser(data) {
     );
 
     revalidatePath("/");
-    return { success: true, user: result.updatedUser };
+    return { success: true, user: result.updatedUser, profile: result.profile };
   } catch (error) {
     console.error("Error updating user and industry:", error.message);
     throw new Error("Failed to update profile");
@@ -114,11 +137,12 @@ export async function getUserOnboardingStatus() {
       },
       select: {
         industry: true,
+        careerProfiles: { select: { id: true } },
       },
     });
 
     return {
-      isOnboarded: !!user?.industry,
+      isOnboarded: !!user?.industry || (user?.careerProfiles?.length ?? 0) > 0,
     };
   } catch (error) {
     console.error("Error checking onboarding status:", error);

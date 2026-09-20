@@ -30,7 +30,7 @@ import useFetch from "@/hooks/use-fetch";
 import { onboardingSchema } from "@/app/lib/schema";
 import { updateUser } from "@/actions/user";
 
-const OnboardingForm = ({ industries }) => {
+const OnboardingForm = ({ industries, isNewProfile }) => {
   const router = useRouter();
   const [selectedIndustry, setSelectedIndustry] = useState(null);
 
@@ -67,8 +67,8 @@ const OnboardingForm = ({ industries }) => {
 
   useEffect(() => {
     if (updateResult?.success && !updateLoading) {
-      toast.success("Profile completed successfully!");
-      router.push("/dashboard");
+      toast.success(isNewProfile ? "New career track created!" : "Profile completed successfully!");
+      router.push(`/dashboard?profileId=${updateResult.profile.id}`);
       router.refresh();
     }
   }, [updateResult, updateLoading]);
@@ -80,11 +80,12 @@ const OnboardingForm = ({ industries }) => {
       <Card className="w-full max-w-lg mt-10 mx-2">
         <CardHeader>
           <CardTitle className="gradient-title text-4xl">
-            Complete Your Profile
+            {isNewProfile ? "Add another career track" : "Complete Your Profile"}
           </CardTitle>
           <CardDescription>
-            Select your industry to get personalized career insights and
-            recommendations.
+              {isNewProfile
+                ? "Create a separate insight dashboard for another career path."
+                : "Select your industry to get personalized career insights and recommendations."}
           </CardDescription>
         </CardHeader>
         <CardContent>

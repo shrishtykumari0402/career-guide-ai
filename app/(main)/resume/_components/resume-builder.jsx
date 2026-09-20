@@ -84,16 +84,14 @@ export default function ResumeBuilder({ initialContent }) {
   const getContactMarkdown = () => {
     const { contactInfo } = formValues;
     const parts = [];
-    if (contactInfo.email) parts.push(`📧 ${contactInfo.email}`);
-    if (contactInfo.mobile) parts.push(`📱 ${contactInfo.mobile}`);
-    if (contactInfo.linkedin)
-      parts.push(`💼 [LinkedIn](${contactInfo.linkedin})`);
-    if (contactInfo.github) parts.push(`💻 [GitHub](${contactInfo.github})`);
+    if (contactInfo.email) parts.push(contactInfo.email);
+    if (contactInfo.mobile) parts.push(contactInfo.mobile);
+    if (contactInfo.linkedin) parts.push(`[LinkedIn](${contactInfo.linkedin})`);
+    if (contactInfo.github) parts.push(`[GitHub](${contactInfo.github})`);
 
     return parts.length > 0
-      ? `## <div align="center">${user.fullName}</div>
-        \n\n<div align="center">\n\n${parts.join(" | ")}\n\n</div>`
-      : "";
+      ? `# ${user?.fullName || "Your Name"}\n\n${parts.join("  |  ")}`
+      : `# ${user?.fullName || "Your Name"}`;
   };
 
   const getCombinedContent = () => {
@@ -135,12 +133,10 @@ export default function ResumeBuilder({ initialContent }) {
   const onSubmit = async (data) => {
     try {
       const formattedContent = previewContent
-        .replace(/\n/g, "\n") // Normalize newlines
-        .replace(/\n\s*\n/g, "\n\n") // Normalize multiple newlines to double newlines
+        .replace(/\n\s*\n/g, "\n\n")
         .trim();
 
-      console.log(previewContent, formattedContent);
-      await saveResumeFn(previewContent);
+      await saveResumeFn(formattedContent);
     } catch (error) {
       console.error("Save error:", error);
     }
@@ -391,23 +387,25 @@ export default function ResumeBuilder({ initialContent }) {
               </span>
             </div>
           )}
-          <div className="border rounded-lg">
-            <MDEditor
-              value={previewContent}
-              onChange={setPreviewContent}
-              height={800}
-              preview={resumeMode}
-            />
-          </div>
-          <div style={{ position: "absolute", left: "-9999px" }}>
-            <div id="resume-pdf">
-              <MDEditor.Markdown
-                source={previewContent}
-                style={{
-                  background: "white",
-                  color: "black",
-                }}
+          {resumeMode === "preview" ? (
+            <div className="resume-preview-shell">
+              <div className="resume-document" id="resume-preview">
+                <MDEditor.Markdown source={previewContent || "# Your Name"} />
+              </div>
+            </div>
+          ) : (
+            <div className="overflow-hidden rounded-lg border bg-background">
+              <MDEditor
+                value={previewContent}
+                onChange={setPreviewContent}
+                height={800}
+                preview="edit"
               />
+            </div>
+          )}
+          <div style={{ position: "absolute", left: "-9999px" }}>
+            <div className="resume-document" id="resume-pdf">
+              <MDEditor.Markdown source={previewContent || "# Your Name"} />
             </div>
           </div>
         </TabsContent>
