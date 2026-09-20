@@ -76,6 +76,22 @@ export async function getResume() {
   });
 }
 
+export async function deleteResume() {
+  const { userId } = await auth();
+  if (!userId) throw new Error("Unauthorized");
+
+  const user = await db.user.findUnique({
+    where: { clerkUserId: userId },
+    select: { id: true },
+  });
+
+  if (!user) throw new Error("User not found");
+
+  await db.resume.deleteMany({ where: { userId: user.id } });
+  revalidatePath("/resume");
+  return { success: true };
+}
+
 export async function improveWithAI({ current, type }) {
   const { userId } = await auth();
   if (!userId) throw new Error("Unauthorized");

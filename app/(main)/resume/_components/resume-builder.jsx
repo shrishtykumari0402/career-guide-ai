@@ -10,6 +10,7 @@ import {
   Loader2,
   Monitor,
   Save,
+  Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 import MDEditor from "@uiw/react-md-editor";
@@ -17,7 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { saveResume } from "@/actions/resume";
+import { deleteResume, saveResume } from "@/actions/resume";
 import { EntryForm } from "./entry-form";
 import useFetch from "@/hooks/use-fetch";
 import { useUser } from "@clerk/nextjs";
@@ -27,7 +28,8 @@ import html2pdf from "html2pdf.js/dist/html2pdf.min.js";
 
 export default function ResumeBuilder({ initialContent }) {
   const [activeTab, setActiveTab] = useState("edit");
-  const [previewContent, setPreviewContent] = useState(initialContent);
+  const [previewContent, setPreviewContent] = useState(initialContent || "");
+  const [savedContent, setSavedContent] = useState(initialContent || "");
   const { user } = useUser();
   const [resumeMode, setResumeMode] = useState("preview");
 
@@ -56,6 +58,11 @@ export default function ResumeBuilder({ initialContent }) {
     error: saveError,
   } = useFetch(saveResume);
 
+  const {
+    loading: isDeleting,
+    fn: deleteResumeFn,
+  } = useFetch(deleteResume);
+
   // Watch form fields for preview updates
   const formValues = watch();
 
@@ -75,11 +82,26 @@ export default function ResumeBuilder({ initialContent }) {
   useEffect(() => {
     if (saveResult && !isSaving) {
       toast.success("Resume saved successfully!");
+      setSavedContent(saveResult.content);
+      setPreviewContent(saveResult.content);
+      setActiveTab("preview");
     }
     if (saveError) {
       toast.error(saveError.message || "Failed to save resume");
     }
   }, [saveResult, saveError, isSaving]);
+
+  const handleDeleteResume = async () => {
+    if (!window.confirm("Delete your saved resume? This cannot be undone.")) return;
+
+    const result = await deleteResumeFn();
+    if (!result?.success) return;
+    setSavedContent("");
+    setPreviewContent("");
+    setActiveTab("edit");
+    setResumeMode("preview");
+    toast.success("Saved resume deleted");
+  };
 
   const getContactMarkdown = () => {
     const { contactInfo } = formValues;
@@ -137,7 +159,7 @@ export default function ResumeBuilder({ initialContent }) {
 
   const onSubmit = async (data) => {
     try {
-      const formattedContent = previewContent
+      const formattedContent = (previewContent || "")
         .replace(/\n\s*\n/g, "\n\n")
         .trim();
 
@@ -147,16 +169,31 @@ export default function ResumeBuilder({ initialContent }) {
     }
   };
 
+  const handleSave = activeTab === "edit" ? handleSubmit(onSubmit) : onSubmit;
+
   return (
     <div data-color-mode="light" className="space-y-4">
       <div className="flex flex-col md:flex-row justify-between items-center gap-2">
         <h1 className="font-bold gradient-title text-5xl md:text-6xl">
           Resume Builder
         </h1>
-        <div className="space-x-2">
+        <div className="flex flex-wrap justify-center gap-2">
+          {savedContent && (
+            <Button
+              variant="outline"
+              type="button"
+              onClick={() => {
+                setActiveTab("preview");
+                setResumeMode("edit");
+              }}
+            >
+              <Edit className="mr-2 h-4 w-4" />
+              Edit saved resume
+            </Button>
+          )}
           <Button
             variant="destructive"
-            onClick={handleSubmit(onSubmit)}
+            onClick={handleSave}
             disabled={isSaving}
           >
             {isSaving ? (
@@ -184,6 +221,22 @@ export default function ResumeBuilder({ initialContent }) {
               </>
             )}
           </Button>
+          {savedContent && (
+            <Button
+              variant="outline"
+              type="button"
+              className="text-destructive hover:text-destructive"
+              onClick={handleDeleteResume}
+              disabled={isDeleting}
+            >
+              {isDeleting ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Trash2 className="mr-2 h-4 w-4" />
+              )}
+              Delete saved resume
+            </Button>
+          )}
         </div>
       </div>
 
@@ -373,7 +426,7 @@ export default function ResumeBuilder({ initialContent }) {
               {resumeMode === "preview" ? (
                 <>
                   <Edit className="h-4 w-4" />
-                  Edit Resume
+                  Edit Saved Resume
                 </>
               ) : (
                 <>
