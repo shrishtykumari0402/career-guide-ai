@@ -17,7 +17,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { entrySchema } from "@/app/lib/schema";
-import { PlusCircle, X } from "lucide-react";
+import { Pencil, PlusCircle, X } from "lucide-react";
 
 const formatDisplayDate = (dateString) => {
   if (!dateString) return "";
@@ -27,6 +27,7 @@ const formatDisplayDate = (dateString) => {
 
 export function EntryForm({ type, entries, onChange }) {
   const [isAdding, setIsAdding] = useState(false);
+  const [editingIndex, setEditingIndex] = useState(null);
   const fieldCopy = {
     Experience: {
       title: "Job title",
@@ -71,22 +72,61 @@ export function EntryForm({ type, entries, onChange }) {
 
   const current = watch("current");
 
-  const handleAdd = handleValidation((data) => {
+  const openAddForm = () => {
+    reset({
+      title: "",
+      organization: "",
+      startDate: "",
+      endDate: "",
+      description: "",
+      current: false,
+    });
+    setEditingIndex(null);
+    setIsAdding(true);
+  };
+
+  const openEditForm = (index) => {
+    const item = entries[index];
+    reset({
+      title: item.title || "",
+      organization: item.organization || "",
+      startDate: item.startDate ? item.startDate : "",
+      endDate: item.endDate ? item.endDate : "",
+      description: item.description || "",
+      current: Boolean(item.current),
+    });
+    setEditingIndex(index);
+    setIsAdding(true);
+  };
+
+  const handleSaveEntry = handleValidation((data) => {
     const formattedEntry = {
       ...data,
       startDate: formatDisplayDate(data.startDate),
       endDate: data.current ? "" : formatDisplayDate(data.endDate),
     };
 
-    onChange([...entries, formattedEntry]);
+    if (editingIndex !== null) {
+      const updatedEntries = [...entries];
+      updatedEntries[editingIndex] = formattedEntry;
+      onChange(updatedEntries);
+    } else {
+      onChange([...entries, formattedEntry]);
+    }
 
     reset();
+    setEditingIndex(null);
     setIsAdding(false);
   });
 
   const handleDelete = (index) => {
     const newEntries = entries.filter((_, i) => i !== index);
     onChange(newEntries);
+    if (editingIndex === index) {
+      setEditingIndex(null);
+      setIsAdding(false);
+      reset();
+    }
   };
 
   return (
@@ -103,14 +143,24 @@ export function EntryForm({ type, entries, onChange }) {
                   </span>
                 )}
               </CardTitle>
-              <Button
-                variant="outline"
-                size="icon"
-                type="button"
-                onClick={() => handleDelete(index)}
-              >
-                <X className="h-4 w-4" />
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  type="button"
+                  onClick={() => openEditForm(index)}
+                >
+                  <Pencil className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  type="button"
+                  onClick={() => handleDelete(index)}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
               <p className="text-sm text-muted-foreground">
@@ -129,7 +179,9 @@ export function EntryForm({ type, entries, onChange }) {
       {isAdding && (
         <Card>
           <CardHeader className="border-b bg-muted/30">
-            <CardTitle className="text-lg">Add {type} details</CardTitle>
+            <CardTitle className="text-lg">
+              {editingIndex !== null ? `Edit ${type} details` : `Add ${type} details`}
+            </CardTitle>
           </CardHeader>
           <CardContent className="space-y-5 pt-6">
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -238,13 +290,14 @@ export function EntryForm({ type, entries, onChange }) {
               onClick={() => {
                 reset();
                 setIsAdding(false);
+                setEditingIndex(null);
               }}
             >
               Cancel
             </Button>
-            <Button type="button" onClick={handleAdd}>
+            <Button type="button" onClick={handleSaveEntry}>
               <PlusCircle className="h-4 w-4 mr-2" />
-              Add Entry
+              {editingIndex !== null ? "Save Changes" : "Add Entry"}
             </Button>
           </CardFooter>
         </Card>
@@ -254,7 +307,7 @@ export function EntryForm({ type, entries, onChange }) {
         <Button
           className="w-full"
           variant="outline"
-          onClick={() => setIsAdding(true)}
+          onClick={openAddForm}
         >
           <PlusCircle className="h-4 w-4 mr-2" />
           Add {type}
