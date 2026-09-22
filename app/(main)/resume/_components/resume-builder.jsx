@@ -194,8 +194,6 @@ export default function ResumeBuilder({ initialContent }) {
       if (savedState) {
         setResumeState(savedState);
       }
-      setActiveTab("preview");
-      setResumeMode("preview");
       if (typeof window !== "undefined") {
         window.localStorage.removeItem(RESUME_DRAFT_STORAGE_KEY);
       }
@@ -225,7 +223,6 @@ export default function ResumeBuilder({ initialContent }) {
     if (saveResult && !isSaving) {
       toast.success("Resume saved successfully!");
       setSavedContent(saveResult.content);
-      setActiveTab("preview");
     }
     if (saveError) {
       toast.error(saveError.message || "Failed to save resume");
@@ -350,8 +347,7 @@ export default function ResumeBuilder({ initialContent }) {
                 variant="outline"
                 type="button"
                 onClick={() => {
-                  setActiveTab("preview");
-                  setResumeMode("edit");
+                  setActiveTab("edit");
                 }}
               >
                 <Edit className="mr-2 h-4 w-4" />
@@ -376,19 +372,21 @@ export default function ResumeBuilder({ initialContent }) {
               </>
             )}
           </Button>
-          <Button onClick={generatePDF} disabled={isGenerating}>
-            {isGenerating ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Generating PDF...
-              </>
-            ) : (
-              <>
-                <Download className="h-4 w-4" />
-                Download PDF
-              </>
-            )}
-          </Button>
+          {savedContent && (
+            <Button onClick={generatePDF} disabled={isGenerating}>
+              {isGenerating ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Generating PDF...
+                </>
+              ) : (
+                <>
+                  <Download className="h-4 w-4" />
+                  Download PDF
+                </>
+              )}
+            </Button>
+          )}
           {savedContent && (
             <Button
               variant="outline"
