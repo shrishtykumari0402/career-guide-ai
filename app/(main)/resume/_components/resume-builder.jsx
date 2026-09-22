@@ -171,7 +171,9 @@ export default function ResumeBuilder({ initialContent }) {
   const [savedContent, setSavedContent] = useState(initialContent || "");
   const { user } = useUser();
   const [resumeMode, setResumeMode] = useState("preview");
-  const [resumeState, setResumeState] = useState(() => getStoredDraft() || defaultResumeValues);
+  const [resumeState, setResumeState] = useState(
+    () => markdownToResumeState(initialContent) || getStoredDraft() || defaultResumeValues
+  );
 
   const {
     loading: isSaving,
@@ -188,12 +190,17 @@ export default function ResumeBuilder({ initialContent }) {
   useEffect(() => {
     if (initialContent) {
       const savedState = markdownToResumeState(initialContent);
-      if (savedState) setResumeState(savedState);
+      setSavedContent(initialContent);
+      if (savedState) {
+        setResumeState(savedState);
+      }
       setActiveTab("preview");
       setResumeMode("preview");
       if (typeof window !== "undefined") {
         window.localStorage.removeItem(RESUME_DRAFT_STORAGE_KEY);
       }
+    } else {
+      setSavedContent("");
     }
   }, [initialContent]);
 
@@ -203,7 +210,7 @@ export default function ResumeBuilder({ initialContent }) {
     if (storedDraft) {
       setResumeState(storedDraft);
     }
-  }, []);
+  }, [initialContent]);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
