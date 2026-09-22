@@ -2,6 +2,39 @@
 
 import { useState, useEffect } from "react";
 import { useForm, Controller } from "react-hook-form";
+
+const RESUME_DRAFT_STORAGE_KEY = "career-guide-ai-resume-draft";
+
+const defaultResumeValues = {
+  contactInfo: {},
+  summary: "",
+  skills: "",
+  experience: [],
+  education: [],
+  projects: [],
+};
+
+const getStoredDraft = () => {
+  if (typeof window === "undefined") return null;
+
+  try {
+    const savedDraft = window.localStorage.getItem(RESUME_DRAFT_STORAGE_KEY);
+    if (!savedDraft) return null;
+
+    const parsed = JSON.parse(savedDraft);
+    return {
+      ...defaultResumeValues,
+      ...parsed,
+      contactInfo: {
+        ...defaultResumeValues.contactInfo,
+        ...(parsed?.contactInfo || {}),
+      },
+    };
+  } catch (error) {
+    console.error("Failed to restore resume draft:", error);
+    return null;
+  }
+};
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   AlertTriangle,
@@ -41,14 +74,7 @@ export default function ResumeBuilder({ initialContent }) {
     formState: { errors },
   } = useForm({
     resolver: zodResolver(resumeSchema),
-    defaultValues: {
-      contactInfo: {},
-      summary: "",
-      skills: "",
-      experience: [],
-      education: [],
-      projects: [],
-    },
+    defaultValues: getStoredDraft() || defaultResumeValues,
   });
 
   const {
@@ -69,6 +95,22 @@ export default function ResumeBuilder({ initialContent }) {
   useEffect(() => {
     if (initialContent) setActiveTab("preview");
   }, [initialContent]);
+
+  useEffect(() => {
+    const storedDraft = getStoredDraft();
+    if (storedDraft) {
+      reset(storedDraft);
+    }
+  }, [reset]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(
+        RESUME_DRAFT_STORAGE_KEY,
+        JSON.stringify(formValues || defaultResumeValues)
+      );
+    }
+  }, [formValues]);
 
   // Update preview content when form values change
   useEffect(() => {
@@ -100,6 +142,8 @@ export default function ResumeBuilder({ initialContent }) {
     setPreviewContent("");
     setActiveTab("edit");
     setResumeMode("preview");
+    window.localStorage.removeItem(RESUME_DRAFT_STORAGE_KEY);
+    reset(defaultResumeValues);
     toast.success("Saved resume deleted");
   };
 
@@ -141,6 +185,10 @@ export default function ResumeBuilder({ initialContent }) {
     setIsGenerating(true);
     try {
       const element = document.getElementById("resume-pdf");
+      if (!element) {
+        throw new Error("Resume preview not found");
+      }
+
       const opt = {
         margin: [15, 15],
         filename: "resume.pdf",
@@ -150,8 +198,10 @@ export default function ResumeBuilder({ initialContent }) {
       };
 
       await html2pdf().set(opt).from(element).save();
+      toast.success("Resume downloaded successfully!");
     } catch (error) {
       console.error("PDF generation error:", error);
+      toast.error(error.message || "Failed to download resume PDF");
     } finally {
       setIsGenerating(false);
     }
@@ -179,17 +229,30 @@ export default function ResumeBuilder({ initialContent }) {
         </h1>
         <div className="flex flex-wrap justify-center gap-2">
           {savedContent && (
-            <Button
-              variant="outline"
-              type="button"
-              onClick={() => {
-                setActiveTab("preview");
-                setResumeMode("edit");
-              }}
-            >
-              <Edit className="mr-2 h-4 w-4" />
-              Edit saved resume
-            </Button>
+            <>
+              <Button
+                variant="outline"
+                type="button"
+                onClick={() => {
+                  setActiveTab("preview");
+                  setResumeMode("preview");
+                }}
+              >
+                <Monitor className="mr-2 h-4 w-4" />
+                View saved resume
+              </Button>
+              <Button
+                variant="outline"
+                type="button"
+                onClick={() => {
+                  setActiveTab("preview");
+                  setResumeMode("edit");
+                }}
+              >
+                <Edit className="mr-2 h-4 w-4" />
+                Edit saved resume
+              </Button>
+            </>
           )}
           <Button
             variant="destructive"

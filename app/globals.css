@@ -147,28 +147,74 @@ body {
   margin: 0 auto;
   padding: 64px 72px;
   background: #ffffff;
-  color: #17202a;
+  color: #111111;
   box-shadow: 0 12px 35px rgb(15 23 42 / 12%);
   font-family: Arial, Helvetica, sans-serif;
   font-size: 14px;
   line-height: 1.7;
 }
 
-.cover-letter-paper .wmde-markdown {
-  background: #ffffff !important;
-  color: #17202a !important;
-  font-family: inherit !important;
-  font-size: inherit !important;
-  line-height: inherit !important;
+.cover-letter-render {
+  color: #111111;
+  background: #ffffff;
 }
 
-.cover-letter-paper .wmde-markdown h1,
-.cover-letter-paper .wmde-markdown h2,
-.cover-letter-paper .wmde-markdown h3,
-.cover-letter-paper .wmde-markdown p,
-.cover-letter-paper .wmde-markdown li,
-.cover-letter-paper .wmde-markdown span {
-  color: #17202a !important;
+.cover-letter-render h1,
+.cover-letter-render h2,
+.cover-letter-render h3,
+.cover-letter-render p,
+.cover-letter-render li,
+.cover-letter-render strong,
+.cover-letter-render em,
+.cover-letter-render span,
+.cover-letter-render a {
+  color: #111111;
+}
+
+.cover-letter-render h1,
+.cover-letter-render h2,
+.cover-letter-render h3 {
+  margin: 0 0 0.75rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.cover-letter-render p,
+.cover-letter-render li {
+  margin: 0 0 0.75rem;
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.cover-letter-render ul,
+.cover-letter-render ol {
+  margin: 0 0 1rem 1.25rem;
+  padding-left: 1rem;
+}
+
+.cover-letter-render pre,
+.cover-letter-render code {
+  background: #ffffff !important;
+  color: #111111 !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.cover-letter-render blockquote {
+  margin: 0.75rem 0;
+  padding-left: 1rem;
+  border-left: 3px solid #d1d5db;
+  color: #111111;
+}
+
+.cover-letter-render a {
+  color: #111111;
+  text-decoration: underline;
+}
+
+.cover-letter-pdf-document {
+  min-height: 900px;
+  box-shadow: none;
 }
 
 @media (max-width: 640px) {
