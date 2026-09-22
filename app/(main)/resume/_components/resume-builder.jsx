@@ -299,7 +299,13 @@ export default function ResumeBuilder({ initialContent }) {
         </TabsList>
 
         <TabsContent value="edit">
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              onSubmit();
+            }}
+            className="space-y-8"
+          >
             {/* Contact Information */}
             <div className="space-y-4">
               <h3 className="text-lg font-medium">Contact Information</h3>
