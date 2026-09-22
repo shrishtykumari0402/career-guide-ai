@@ -1,12 +1,37 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useForm, Controller } from "react-hook-form";
+import { useState, useEffect, useMemo } from "react";
+import {
+  AlertTriangle,
+  Download,
+  Edit,
+  Loader2,
+  Monitor,
+  Save,
+  Trash2,
+} from "lucide-react";
+import { toast } from "sonner";
+import MDEditor from "@uiw/react-md-editor";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { deleteResume, saveResume } from "@/actions/resume";
+import { EntryForm } from "./entry-form";
+import useFetch from "@/hooks/use-fetch";
+import { useUser } from "@clerk/nextjs";
+import { entriesToMarkdown } from "@/app/lib/helper";
+import html2pdf from "html2pdf.js/dist/html2pdf.min.js";
 
 const RESUME_DRAFT_STORAGE_KEY = "career-guide-ai-resume-draft";
 
 const defaultResumeValues = {
-  contactInfo: {},
+  contactInfo: {
+    email: "",
+    mobile: "",
+    linkedin: "",
+    github: "",
+  },
   summary: "",
   skills: "",
   experience: [],
@@ -35,48 +60,13 @@ const getStoredDraft = () => {
     return null;
   }
 };
-import { zodResolver } from "@hookform/resolvers/zod";
-import {
-  AlertTriangle,
-  Download,
-  Edit,
-  Loader2,
-  Monitor,
-  Save,
-  Trash2,
-} from "lucide-react";
-import { toast } from "sonner";
-import MDEditor from "@uiw/react-md-editor";
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input";
-import { deleteResume, saveResume } from "@/actions/resume";
-import { EntryForm } from "./entry-form";
-import useFetch from "@/hooks/use-fetch";
-import { useUser } from "@clerk/nextjs";
-import { entriesToMarkdown } from "@/app/lib/helper";
-import { resumeSchema } from "@/app/lib/schema";
-import html2pdf from "html2pdf.js/dist/html2pdf.min.js";
 
 export default function ResumeBuilder({ initialContent }) {
   const [activeTab, setActiveTab] = useState("edit");
-  const [previewContent, setPreviewContent] = useState(initialContent || "");
   const [savedContent, setSavedContent] = useState(initialContent || "");
   const { user } = useUser();
   const [resumeMode, setResumeMode] = useState("preview");
-
-  const {
-    control,
-    register,
-    handleSubmit,
-    watch,
-    reset,
-    formState: { errors },
-  } = useForm({
-    resolver: zodResolver(resumeSchema),
-    defaultValues: getStoredDraft() || defaultResumeValues,
-  });
+  const [resumeState, setResumeState] = useState(() => getStoredDraft() || defaultResumeValues);
 
   const {
     loading: isSaving,
@@ -90,9 +80,6 @@ export default function ResumeBuilder({ initialContent }) {
     fn: deleteResumeFn,
   } = useFetch(deleteResume);
 
-  // Watch form fields for preview updates
-  const formValues = watch();
-
   useEffect(() => {
     if (initialContent) setActiveTab("preview");
   }, [initialContent]);
@@ -100,33 +87,23 @@ export default function ResumeBuilder({ initialContent }) {
   useEffect(() => {
     const storedDraft = getStoredDraft();
     if (storedDraft) {
-      reset(storedDraft);
+      setResumeState(storedDraft);
     }
-  }, [reset]);
+  }, []);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
       window.localStorage.setItem(
         RESUME_DRAFT_STORAGE_KEY,
-        JSON.stringify(formValues || defaultResumeValues)
+        JSON.stringify(resumeState)
       );
     }
-  }, [formValues]);
+  }, [resumeState]);
 
-  // Update preview content when form values change
-  useEffect(() => {
-    if (activeTab === "edit") {
-      const newContent = getCombinedContent();
-      setPreviewContent(newContent ? newContent : initialContent);
-    }
-  }, [formValues, activeTab]);
-
-  // Handle save result
   useEffect(() => {
     if (saveResult && !isSaving) {
       toast.success("Resume saved successfully!");
       setSavedContent(saveResult.content);
-      setPreviewContent(saveResult.content);
       setActiveTab("preview");
     }
     if (saveError) {
@@ -134,22 +111,15 @@ export default function ResumeBuilder({ initialContent }) {
     }
   }, [saveResult, saveError, isSaving]);
 
-  const handleDeleteResume = async () => {
-    if (!window.confirm("Delete your saved resume? This cannot be undone.")) return;
-
-    const result = await deleteResumeFn();
-    if (!result?.success) return;
-    setSavedContent("");
-    setPreviewContent("");
-    setActiveTab("edit");
-    setResumeMode("preview");
-    window.localStorage.removeItem(RESUME_DRAFT_STORAGE_KEY);
-    reset(defaultResumeValues);
-    toast.success("Saved resume deleted");
+  const updateResumeState = (updater) => {
+    setResumeState((current) => {
+      const next = typeof updater === "function" ? updater(current) : updater;
+      return next;
+    });
   };
 
-  const getContactMarkdown = () => {
-    const { contactInfo } = formValues;
+  const getContactMarkdown = (state) => {
+    const contactInfo = state.contactInfo || {};
     const parts = [];
     if (contactInfo.email) parts.push(contactInfo.email);
     if (contactInfo.mobile) parts.push(contactInfo.mobile);
@@ -161,15 +131,15 @@ export default function ResumeBuilder({ initialContent }) {
       : `# ${user?.fullName || "Your Name"}`;
   };
 
-  const getCombinedContent = () => {
-    const { summary, skills, experience, education, projects } = formValues;
+  const getCombinedContent = (state) => {
+    const { summary, skills, experience, education, projects } = state;
     const skillList = skills
       ?.split(/,|\n/)
       .map((skill) => skill.trim())
       .filter(Boolean);
 
     return [
-      getContactMarkdown(),
+      getContactMarkdown(state),
       summary && `## Professional Summary\n\n${summary}`,
       skillList?.length && `## Skills\n\n${skillList.join("  |  ")}`,
       entriesToMarkdown(experience, "Work Experience"),
@@ -178,6 +148,24 @@ export default function ResumeBuilder({ initialContent }) {
     ]
       .filter(Boolean)
       .join("\n\n");
+  };
+
+  const previewContent = useMemo(
+    () => getCombinedContent(resumeState),
+    [resumeState, user?.fullName]
+  );
+
+  const handleDeleteResume = async () => {
+    if (!window.confirm("Delete your saved resume? This cannot be undone.")) return;
+
+    const result = await deleteResumeFn();
+    if (!result?.success) return;
+    setSavedContent("");
+    setResumeState(defaultResumeValues);
+    setActiveTab("edit");
+    setResumeMode("preview");
+    window.localStorage.removeItem(RESUME_DRAFT_STORAGE_KEY);
+    toast.success("Saved resume deleted");
   };
 
   const [isGenerating, setIsGenerating] = useState(false);
@@ -208,7 +196,7 @@ export default function ResumeBuilder({ initialContent }) {
     }
   };
 
-  const onSubmit = async (data) => {
+  const onSubmit = async () => {
     try {
       const formattedContent = (previewContent || "")
         .replace(/\n\s*\n/g, "\n\n")
@@ -220,7 +208,7 @@ export default function ResumeBuilder({ initialContent }) {
     }
   };
 
-  const handleSave = activeTab === "edit" ? handleSubmit(onSubmit) : onSubmit;
+  const handleSave = () => onSubmit();
 
   return (
     <div data-color-mode="light" className="space-y-4">
@@ -319,55 +307,70 @@ export default function ResumeBuilder({ initialContent }) {
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Email</label>
                   <Input
-                    {...register("contactInfo.email")}
                     type="email"
                     placeholder="your@email.com"
-                    error={errors.contactInfo?.email}
+                    value={resumeState.contactInfo.email}
+                    onChange={(event) =>
+                      updateResumeState((current) => ({
+                        ...current,
+                        contactInfo: {
+                          ...current.contactInfo,
+                          email: event.target.value,
+                        },
+                      }))
+                    }
                   />
-                  {errors.contactInfo?.email && (
-                    <p className="text-sm text-red-500">
-                      {errors.contactInfo.email.message}
-                    </p>
-                  )}
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Mobile Number</label>
                   <Input
-                    {...register("contactInfo.mobile")}
                     type="tel"
                     placeholder="+1 234 567 8900"
+                    value={resumeState.contactInfo.mobile}
+                    onChange={(event) =>
+                      updateResumeState((current) => ({
+                        ...current,
+                        contactInfo: {
+                          ...current.contactInfo,
+                          mobile: event.target.value,
+                        },
+                      }))
+                    }
                   />
-                  {errors.contactInfo?.mobile && (
-                    <p className="text-sm text-red-500">
-                      {errors.contactInfo.mobile.message}
-                    </p>
-                  )}
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium">LinkedIn URL</label>
                   <Input
-                    {...register("contactInfo.linkedin")}
                     type="url"
                     placeholder="https://linkedin.com/in/your-profile"
+                    value={resumeState.contactInfo.linkedin}
+                    onChange={(event) =>
+                      updateResumeState((current) => ({
+                        ...current,
+                        contactInfo: {
+                          ...current.contactInfo,
+                          linkedin: event.target.value,
+                        },
+                      }))
+                    }
                   />
-                  {errors.contactInfo?.linkedin && (
-                    <p className="text-sm text-red-500">
-                      {errors.contactInfo.linkedin.message}
-                    </p>
-                  )}
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium">GitHub Profile</label>
                   <Input
-                    {...register("contactInfo.github")}
                     type="url"
                     placeholder="https://github.com/your-username"
+                    value={resumeState.contactInfo.github}
+                    onChange={(event) =>
+                      updateResumeState((current) => ({
+                        ...current,
+                        contactInfo: {
+                          ...current.contactInfo,
+                          github: event.target.value,
+                        },
+                      }))
+                    }
                   />
-                  {errors.contactInfo?.github && (
-                    <p className="text-sm text-red-500">
-                      {errors.contactInfo.github.message}
-                    </p>
-                  )}
                 </div>
               </div>
             </div>
@@ -375,104 +378,78 @@ export default function ResumeBuilder({ initialContent }) {
             {/* Summary */}
             <div className="space-y-4">
               <h3 className="text-lg font-medium">Professional Summary</h3>
-              <Controller
-                name="summary"
-                control={control}
-                render={({ field }) => (
-                  <Textarea
-                    {...field}
-                    className="h-32"
-                    placeholder="Write a compelling professional summary..."
-                    error={errors.summary}
-                  />
-                )}
+              <Textarea
+                className="h-32"
+                placeholder="Write a compelling professional summary..."
+                value={resumeState.summary}
+                onChange={(event) =>
+                  updateResumeState((current) => ({
+                    ...current,
+                    summary: event.target.value,
+                  }))
+                }
               />
-              {errors.summary && (
-                <p className="text-sm text-red-500">{errors.summary.message}</p>
-              )}
             </div>
 
             {/* Skills */}
             <div className="space-y-4">
               <h3 className="text-lg font-medium">Skills</h3>
-              <Controller
-                name="skills"
-                control={control}
-                render={({ field }) => (
-                  <Textarea
-                    {...field}
-                    className="h-32"
-                    placeholder="List your key skills..."
-                    error={errors.skills}
-                  />
-                )}
+              <Textarea
+                className="h-32"
+                placeholder="List your key skills..."
+                value={resumeState.skills}
+                onChange={(event) =>
+                  updateResumeState((current) => ({
+                    ...current,
+                    skills: event.target.value,
+                  }))
+                }
               />
-              {errors.skills && (
-                <p className="text-sm text-red-500">{errors.skills.message}</p>
-              )}
             </div>
 
             {/* Experience */}
             <div className="space-y-4">
               <h3 className="text-lg font-medium">Work Experience</h3>
-              <Controller
-                name="experience"
-                control={control}
-                render={({ field }) => (
-                  <EntryForm
-                    type="Experience"
-                    entries={field.value}
-                    onChange={field.onChange}
-                  />
-                )}
+              <EntryForm
+                type="Experience"
+                entries={resumeState.experience}
+                onChange={(entries) =>
+                  updateResumeState((current) => ({
+                    ...current,
+                    experience: entries,
+                  }))
+                }
               />
-              {errors.experience && (
-                <p className="text-sm text-red-500">
-                  {errors.experience.message}
-                </p>
-              )}
             </div>
 
             {/* Education */}
             <div className="space-y-4">
               <h3 className="text-lg font-medium">Education</h3>
-              <Controller
-                name="education"
-                control={control}
-                render={({ field }) => (
-                  <EntryForm
-                    type="Education"
-                    entries={field.value}
-                    onChange={field.onChange}
-                  />
-                )}
+              <EntryForm
+                type="Education"
+                entries={resumeState.education}
+                onChange={(entries) =>
+                  updateResumeState((current) => ({
+                    ...current,
+                    education: entries,
+                  }))
+                }
               />
-              {errors.education && (
-                <p className="text-sm text-red-500">
-                  {errors.education.message}
-                </p>
-              )}
             </div>
 
             {/* Projects */}
             <div className="space-y-4">
               <h3 className="text-lg font-medium">Projects</h3>
-              <Controller
-                name="projects"
-                control={control}
-                render={({ field }) => (
-                  <EntryForm
-                    type="Project"
-                    entries={field.value}
-                    onChange={field.onChange}
-                  />
-                )}
+              <EntryForm
+                type="Project"
+                entries={resumeState.projects}
+                onChange={(entries) =>
+                  updateResumeState((current) => ({
+                    ...current,
+                    projects: entries,
+                  }))
+                }
               />
-              {errors.projects && (
-                <p className="text-sm text-red-500">
-                  {errors.projects.message}
-                </p>
-              )}
             </div>
           </form>
         </TabsContent>
@@ -516,13 +493,10 @@ export default function ResumeBuilder({ initialContent }) {
               </div>
             </div>
           ) : (
-            <div className="overflow-hidden rounded-lg border bg-background">
-              <MDEditor
-                value={previewContent}
-                onChange={setPreviewContent}
-                height={800}
-                preview="edit"
-              />
+            <div className="resume-preview-shell">
+              <div className="resume-document" id="resume-preview-formatted">
+                <MDEditor.Markdown source={previewContent || "# Your Name"} />
+              </div>
             </div>
           )}
           <div style={{ position: "absolute", left: "-9999px" }}>
