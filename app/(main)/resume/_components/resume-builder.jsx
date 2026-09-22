@@ -71,6 +71,7 @@ export default function ResumeBuilder({ initialContent }) {
     register,
     handleSubmit,
     watch,
+    reset,
     formState: { errors },
   } = useForm({
     resolver: zodResolver(resumeSchema),
