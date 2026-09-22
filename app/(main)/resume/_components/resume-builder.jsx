@@ -21,7 +21,7 @@ import { EntryForm } from "./entry-form";
 import useFetch from "@/hooks/use-fetch";
 import { useUser } from "@clerk/nextjs";
 import { entriesToMarkdown } from "@/app/lib/helper";
-import html2pdf from "html2pdf.js/dist/html2pdf.min.js";
+import { pdf, Document, Page, Text, Link, View, StyleSheet } from "@react-pdf/renderer";
 
 const RESUME_DRAFT_STORAGE_KEY = "career-guide-ai-resume-draft";
 
@@ -37,6 +37,111 @@ const defaultResumeValues = {
   experience: [],
   education: [],
   projects: [],
+};
+
+const pdfStyles = StyleSheet.create({
+  page: { padding: 36, fontSize: 10, lineHeight: 1.35, color: "#111827" },
+  name: { fontSize: 20, fontWeight: 700, marginBottom: 6 },
+  contact: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginBottom: 14 },
+  section: { marginBottom: 12 },
+  heading: { fontSize: 13, fontWeight: 700, marginBottom: 5 },
+  entryTitle: { fontSize: 11, fontWeight: 700, marginTop: 5 },
+  muted: { color: "#4b5563" },
+  link: { color: "#2563eb", textDecoration: "underline" },
+  bullet: { marginLeft: 10 },
+});
+
+const linkPattern = /\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g;
+
+const renderPdfText = (text, keyPrefix) => {
+  const parts = [];
+  let lastIndex = 0;
+  let match;
+  while ((match = linkPattern.exec(text || ""))) {
+    if (match.index > lastIndex) parts.push(<Text key={`${keyPrefix}-text-${lastIndex}`}>{text.slice(lastIndex, match.index)}</Text>);
+    parts.push(<Link key={`${keyPrefix}-link-${match.index}`} src={match[2]} style={pdfStyles.link}>{match[1]}</Link>);
+    lastIndex = match.index + match[0].length;
+  }
+  if (lastIndex < (text || "").length) parts.push(<Text key={`${keyPrefix}-tail`}>{text.slice(lastIndex)}</Text>);
+  return parts.length ? parts : text || "";
+};
+
+function ResumePdfDocument({ state, name }) {
+  const contact = state.contactInfo || {};
+  const sections = [
+    ["Professional Summary", state.summary ? [state.summary] : []],
+    ["Skills", state.skills ? [state.skills] : []],
+    ["Work Experience", state.experience || []],
+    ["Education", state.education || []],
+    ["Projects", state.projects || []],
+  ];
+
+  return (
+    <Document>
+      <Page size="A4" style={pdfStyles.page}>
+        <Text style={pdfStyles.name}>{name || "Your Name"}</Text>
+        <View style={pdfStyles.contact}>
+          {contact.email && <Link src={`mailto:${contact.email}`} style={pdfStyles.link}>{contact.email}</Link>}
+          {contact.mobile && <Text>{contact.mobile}</Text>}
+          {contact.linkedin && <Link src={contact.linkedin} style={pdfStyles.link}>LinkedIn</Link>}
+          {contact.github && <Link src={contact.github} style={pdfStyles.link}>GitHub</Link>}
+        </View>
+        {sections.map(([title, values]) => values.length > 0 && (
+          <View key={title} style={pdfStyles.section}>
+            <Text style={pdfStyles.heading}>{title}</Text>
+            {title === "Professional Summary" || title === "Skills" ? (
+              <Text>{renderPdfText(values[0], title)}</Text>
+            ) : values.map((entry, index) => (
+              <View key={`${title}-${index}`}>
+                <Text style={pdfStyles.entryTitle}>{entry.title}{entry.organization ? ` | ${entry.organization}` : ""}</Text>
+                <Text style={pdfStyles.muted}>{entry.current ? `${entry.startDate} - Present` : `${entry.startDate} - ${entry.endDate}`}</Text>
+                {(entry.description || "").split(/\n+/).filter(Boolean).map((line, lineIndex) => (
+                  <Text key={`${title}-${index}-${lineIndex}`} style={pdfStyles.bullet}>- {renderPdfText(line, `${title}-${index}-${lineIndex}`)}</Text>
+                ))}
+              </View>
+            ))}
+          </View>
+        ))}
+      </Page>
+    </Document>
+  );
+}
+
+const markdownToResumeState = (content) => {
+  if (!content) return null;
+  const state = { ...defaultResumeValues, contactInfo: { ...defaultResumeValues.contactInfo } };
+  const lines = content.split("\n");
+  const nameLineIndex = lines.findIndex((line) => line.startsWith("# "));
+  const contactLine = lines[nameLineIndex + 2] || "";
+  contactLine.split("  |  ").forEach((part) => {
+    const link = part.match(/^\[LinkedIn\]\((.+)\)$/);
+    const github = part.match(/^\[GitHub\]\((.+)\)$/);
+    if (part.includes("@")) state.contactInfo.email = part;
+    else if (link) state.contactInfo.linkedin = link[1];
+    else if (github) state.contactInfo.github = github[1];
+    else if (part) state.contactInfo.mobile = part;
+  });
+  const entries = { "Work Experience": "experience", Education: "education", Projects: "projects" };
+  let section = "";
+  let entry = null;
+  lines.slice(nameLineIndex + 2).forEach((line) => {
+    const sectionMatch = line.match(/^## (.+)$/);
+    if (sectionMatch) { section = sectionMatch[1]; entry = null; return; }
+    if (section === "Professional Summary" && line.trim()) state.summary += `${state.summary ? "\n" : ""}${line.trim()}`;
+    if (section === "Skills" && line.trim()) state.skills += `${state.skills ? "\n" : ""}${line.trim()}`;
+    const entryMatch = line.match(/^### (.+?)(?: \| (.+))?$/);
+    if (entryMatch && entries[section]) {
+      entry = { title: entryMatch[1], organization: entryMatch[2] || "", startDate: "", endDate: "", description: "", current: false };
+      state[entries[section]].push(entry);
+      return;
+    }
+    if (entry) {
+      const date = line.match(/<span class="resume-date">(.+?)<\/span>/);
+      if (date) { const dates = date[1].split(" - "); entry.startDate = dates[0]; entry.current = dates[1] === "Present"; entry.endDate = entry.current ? "" : dates[1] || ""; }
+      else if (line.startsWith("- ")) entry.description += `${entry.description ? "\n" : ""}${line.slice(2)}`;
+    }
+  });
+  return state;
 };
 
 const getStoredDraft = () => {
@@ -81,10 +186,19 @@ export default function ResumeBuilder({ initialContent }) {
   } = useFetch(deleteResume);
 
   useEffect(() => {
-    if (initialContent) setActiveTab("preview");
+    if (initialContent) {
+      const savedState = markdownToResumeState(initialContent);
+      if (savedState) setResumeState(savedState);
+      setActiveTab("preview");
+      setResumeMode("preview");
+      if (typeof window !== "undefined") {
+        window.localStorage.removeItem(RESUME_DRAFT_STORAGE_KEY);
+      }
+    }
   }, [initialContent]);
 
   useEffect(() => {
+    if (initialContent) return;
     const storedDraft = getStoredDraft();
     if (storedDraft) {
       setResumeState(storedDraft);
@@ -173,20 +287,15 @@ export default function ResumeBuilder({ initialContent }) {
   const generatePDF = async () => {
     setIsGenerating(true);
     try {
-      const element = document.getElementById("resume-pdf");
-      if (!element) {
-        throw new Error("Resume preview not found");
-      }
-
-      const opt = {
-        margin: [15, 15],
-        filename: "resume.pdf",
-        image: { type: "jpeg", quality: 0.98 },
-        html2canvas: { scale: 2 },
-        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-      };
-
-      await html2pdf().set(opt).from(element).save();
+      const blob = await pdf(
+        <ResumePdfDocument state={resumeState} name={user?.fullName} />
+      ).toBlob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "resume.pdf";
+      link.click();
+      URL.revokeObjectURL(url);
       toast.success("Resume downloaded successfully!");
     } catch (error) {
       console.error("PDF generation error:", error);
