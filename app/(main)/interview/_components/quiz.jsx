@@ -145,7 +145,18 @@ export default function Quiz() {
         {showExplanation && (
           <div className="mt-4 p-4 bg-muted rounded-lg">
             <p className="font-medium">Explanation:</p>
-            <p className="text-muted-foreground">{question.explanation}</p>
+            <p className="text-muted-foreground whitespace-pre-wrap">
+              {typeof question.explanation === "string"
+                ? question.explanation
+                    .replace(/^```(?:json)?\s*/i, "")
+                    .replace(/\s*```$/i, "")
+                    .replace(/\\n/g, "\n")
+                    .replace(/`+/g, "")
+                    .replace(/\*\*([^*]+)\*\*/g, "$1")
+                    .replace(/\*([^*]+)\*/g, "$1")
+                    .trim()
+                : question.explanation}
+            </p>
           </div>
         )}
       </CardContent>

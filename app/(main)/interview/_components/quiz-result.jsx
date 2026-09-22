@@ -5,6 +5,53 @@ import { Button } from "@/components/ui/button";
 import { CardContent, CardFooter } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 
+function normalizeDisplayText(value) {
+  if (value === null || value === undefined) return "";
+
+  let text = String(value).trim();
+
+  if (!text) return "";
+
+  text = text
+    .replace(/^```(?:json)?\s*/i, "")
+    .replace(/\s*```$/i, "")
+    .trim();
+
+  if ((text.startsWith("{") && text.endsWith("}")) || (text.startsWith("[") && text.endsWith("]"))) {
+    try {
+      const parsed = JSON.parse(text);
+
+      if (typeof parsed === "string") return normalizeDisplayText(parsed);
+
+      if (Array.isArray(parsed)) {
+        const firstString = parsed.find((item) => typeof item === "string" && item.trim());
+        if (firstString) return normalizeDisplayText(firstString);
+      }
+
+      if (parsed && typeof parsed === "object") {
+        const firstValue = Object.values(parsed).find(
+          (item) => typeof item === "string" && item.trim()
+        );
+
+        if (firstValue) return normalizeDisplayText(firstValue);
+      }
+    } catch (error) {
+      // Ignore JSON parse failures and keep the plain text version.
+    }
+  }
+
+  return text
+    .replace(/\\n/g, "\n")
+    .replace(/\\"/g, '"')
+    .replace(/\\'/g, "'")
+    .replace(/`+/g, "")
+    .replace(/\*\*([^*]+)\*\*/g, "$1")
+    .replace(/\*([^*]+)\*/g, "$1")
+    .replace(/^['\"]|['\"]$/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 export default function QuizResult({
   result,
   hideStartNew = false,
@@ -30,7 +77,9 @@ export default function QuizResult({
         {result.improvementTip && (
           <div className="bg-muted p-4 rounded-lg">
             <p className="font-medium">Improvement Tip:</p>
-            <p className="text-muted-foreground">{result.improvementTip}</p>
+            <p className="text-muted-foreground whitespace-pre-wrap">
+              {normalizeDisplayText(result.improvementTip)}
+            </p>
           </div>
         )}
 
@@ -48,12 +97,16 @@ export default function QuizResult({
                 )}
               </div>
               <div className="text-sm text-muted-foreground">
-                <p>Your answer: {q.userAnswer}</p>
-                {!q.isCorrect && <p>Correct answer: {q.answer}</p>}
+                <p>Your answer: {normalizeDisplayText(q.userAnswer)}</p>
+                {!q.isCorrect && (
+                  <p>Correct answer: {normalizeDisplayText(q.answer)}</p>
+                )}
               </div>
               <div className="text-sm bg-muted p-2 rounded">
                 <p className="font-medium">Explanation:</p>
-                <p>{q.explanation}</p>
+                <p className="whitespace-pre-wrap">
+                  {normalizeDisplayText(q.explanation)}
+                </p>
               </div>
             </div>
           ))}

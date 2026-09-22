@@ -6,6 +6,53 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
+function normalizeGeneratedText(value) {
+  if (value === null || value === undefined) return "";
+
+  let text = String(value).trim();
+
+  if (!text) return "";
+
+  text = text
+    .replace(/^```(?:json)?\s*/i, "")
+    .replace(/\s*```$/i, "")
+    .trim();
+
+  if ((text.startsWith("{") && text.endsWith("}")) || (text.startsWith("[") && text.endsWith("]"))) {
+    try {
+      const parsed = JSON.parse(text);
+
+      if (typeof parsed === "string") return normalizeGeneratedText(parsed);
+
+      if (Array.isArray(parsed)) {
+        const firstString = parsed.find((item) => typeof item === "string" && item.trim());
+        if (firstString) return normalizeGeneratedText(firstString);
+      }
+
+      if (parsed && typeof parsed === "object") {
+        const firstValue = Object.values(parsed).find(
+          (item) => typeof item === "string" && item.trim()
+        );
+
+        if (firstValue) return normalizeGeneratedText(firstValue);
+      }
+    } catch (error) {
+      // Ignore JSON parse failures and fall back to the raw text.
+    }
+  }
+
+  return text
+    .replace(/\\n/g, "\n")
+    .replace(/\\"/g, '"')
+    .replace(/\\'/g, "'")
+    .replace(/`+/g, "")
+    .replace(/\*\*([^*]+)\*\*/g, "$1")
+    .replace(/\*([^*]+)\*/g, "$1")
+    .replace(/^['\"]|['\"]$/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 // Used for the improvement tip (stays consistent)
 const model = genAI.getGenerativeModel({
   model: "gemini-2.5-flash",
@@ -160,11 +207,11 @@ export async function saveQuizResult(questions, answers, score) {
   if (!user) throw new Error("User not found");
 
   const questionResults = questions.map((q, index) => ({
-    question: q.question,
-    answer: q.correctAnswer,
-    userAnswer: answers[index],
-    isCorrect: q.correctAnswer === answers[index],
-    explanation: q.explanation,
+    question: normalizeGeneratedText(q.question),
+    answer: normalizeGeneratedText(q.correctAnswer),
+    userAnswer: normalizeGeneratedText(answers[index]),
+    isCorrect: normalizeGeneratedText(q.correctAnswer) === normalizeGeneratedText(answers[index]),
+    explanation: normalizeGeneratedText(q.explanation),
   }));
 
   const wrongAnswers = questionResults.filter((q) => !q.isCorrect);
@@ -194,7 +241,7 @@ Give a short learning suggestion under 2 sentences.
     try {
       const tipResult = await generateContentWithRetry(improvementPrompt);
 
-      improvementTip = tipResult.response.text().trim();
+      improvementTip = normalizeGeneratedText(tipResult.response.text());
     } catch (error) {
       console.error("Error generating improvement tip:", error);
     }
