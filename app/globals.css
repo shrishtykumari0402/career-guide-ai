@@ -131,10 +131,20 @@ body {
 }
 
 .resume-pdf-document {
-  width: 180mm;
-  min-height: 267mm;
-  padding: 16mm;
+  width: 794px;
+  min-height: 1123px;
+  padding: 40px 48px;
   box-shadow: none;
+}
+
+.resume-pdf-source {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: -1;
+  width: 794px;
+  opacity: 0.01;
+  pointer-events: none;
 }
 
 .cover-letter-paper {

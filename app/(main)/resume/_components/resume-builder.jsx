@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import MDEditor from "@uiw/react-md-editor";
+import html2pdf from "html2pdf.js/dist/html2pdf.min.js";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
@@ -198,8 +199,11 @@ export default function ResumeBuilder({ initialContent }) {
   const [savedContent, setSavedContent] = useState(initialContent || "");
   const { user } = useUser();
   const [resumeMode, setResumeMode] = useState("preview");
+  const [savedResumeState, setSavedResumeState] = useState(
+    () => markdownToResumeState(initialContent)
+  );
   const [resumeState, setResumeState] = useState(
-    () => markdownToResumeState(initialContent) || getStoredDraft() || defaultResumeValues
+    () => (initialContent ? defaultResumeValues : getStoredDraft() || defaultResumeValues)
   );
 
   const {
@@ -218,14 +222,20 @@ export default function ResumeBuilder({ initialContent }) {
     if (initialContent) {
       const savedState = markdownToResumeState(initialContent);
       setSavedContent(initialContent);
+      setSavedResumeState(savedState);
       if (savedState) {
-        setResumeState(savedState);
+        setResumeState(defaultResumeValues);
+        setActiveTab("preview");
+        setResumeMode("preview");
       }
       if (typeof window !== "undefined") {
         window.localStorage.removeItem(RESUME_DRAFT_STORAGE_KEY);
       }
     } else {
       setSavedContent("");
+      setSavedResumeState(null);
+      setResumeState(getStoredDraft() || defaultResumeValues);
+      setActiveTab("edit");
     }
   }, [initialContent]);
 
@@ -296,8 +306,12 @@ export default function ResumeBuilder({ initialContent }) {
   };
 
   const previewContent = useMemo(
-    () => getCombinedContent(resumeState),
-    [resumeState, user?.fullName]
+    () => getCombinedContent(
+      savedContent && activeTab === "preview" && resumeMode === "preview"
+        ? savedResumeState || resumeState
+        : resumeState
+    ),
+    [activeTab, resumeMode, resumeState, savedContent, savedResumeState, user?.fullName]
   );
 
   const handleDeleteResume = async () => {
@@ -306,6 +320,7 @@ export default function ResumeBuilder({ initialContent }) {
     const result = await deleteResumeFn();
     if (!result?.success) return;
     setSavedContent("");
+    setSavedResumeState(null);
     setResumeState(defaultResumeValues);
     setActiveTab("edit");
     setResumeMode("preview");
@@ -318,15 +333,17 @@ export default function ResumeBuilder({ initialContent }) {
   const generatePDF = async () => {
     setIsGenerating(true);
     try {
-      const blob = await pdf(
-        <ResumePdfDocument state={resumeState} name={user?.fullName} />
-      ).toBlob();
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = "resume.pdf";
-      link.click();
-      URL.revokeObjectURL(url);
+      const element = document.getElementById("resume-pdf");
+      await html2pdf()
+        .set({
+          margin: 0,
+          filename: "resume.pdf",
+          image: { type: "jpeg", quality: 0.98 },
+          html2canvas: { scale: 2, useCORS: true, backgroundColor: "#ffffff" },
+          jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+        })
+        .from(element)
+        .save();
       toast.success("Resume downloaded successfully!");
     } catch (error) {
       console.error("PDF generation error:", error);
@@ -343,6 +360,8 @@ export default function ResumeBuilder({ initialContent }) {
         .trim();
 
       await saveResumeFn(formattedContent);
+      setSavedContent(formattedContent);
+      setSavedResumeState(markdownToResumeState(formattedContent));
     } catch (error) {
       console.error("Save error:", error);
     }
@@ -375,6 +394,7 @@ export default function ResumeBuilder({ initialContent }) {
                 type="button"
                 onClick={() => {
                   setActiveTab("edit");
+                  setResumeState(savedResumeState || defaultResumeValues);
                 }}
               >
                 <Edit className="mr-2 h-4 w-4" />
@@ -646,13 +666,13 @@ export default function ResumeBuilder({ initialContent }) {
               </div>
             </div>
           )}
-          <div style={{ position: "absolute", left: "-9999px" }}>
-            <div className="resume-document resume-pdf-document" id="resume-pdf">
-              <MDEditor.Markdown source={previewContent || "# Your Name"} />
-            </div>
-          </div>
         </TabsContent>
       </Tabs>
+      <div className="resume-pdf-source">
+        <div className="resume-document resume-pdf-document" id="resume-pdf">
+          <MDEditor.Markdown source={previewContent || "# Your Name"} />
+        </div>
+      </div>
     </div>
   );
 }
