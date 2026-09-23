@@ -40,15 +40,16 @@ const defaultResumeValues = {
 };
 
 const pdfStyles = StyleSheet.create({
-  page: { padding: 34, fontSize: 9.5, lineHeight: 1.28, color: "#111827" },
-  name: { fontSize: 18, fontWeight: 700, marginBottom: 3 },
-  contact: { flexDirection: "row", flexWrap: "wrap", gap: 5, marginBottom: 10, fontSize: 8.5 },
-  section: { marginBottom: 8 },
-  heading: { fontSize: 11, fontWeight: 700, marginBottom: 3, paddingBottom: 2, borderBottom: "1pt solid #111827" },
-  entryTitle: { fontSize: 9.5, fontWeight: 700, marginTop: 3 },
-  muted: { color: "#4b5563", fontSize: 8.5 },
+  page: { padding: 42, fontSize: 10, lineHeight: 1.35, color: "#111827" },
+  name: { fontSize: 20, fontWeight: 700, marginBottom: 5 },
+  contact: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginBottom: 14, fontSize: 9 },
+  section: { marginBottom: 12 },
+  heading: { fontSize: 13, fontWeight: 700, marginBottom: 5, paddingBottom: 2, borderBottom: "1pt solid #d1d5db" },
+  entry: { marginBottom: 6 },
+  entryTitle: { fontSize: 11, fontWeight: 700, marginTop: 5 },
+  muted: { color: "#4b5563", fontSize: 10 },
   link: { color: "#2563eb", textDecoration: "underline" },
-  bullet: { marginLeft: 9, marginTop: 1 },
+  bullet: { marginLeft: 10, marginTop: 2 },
 });
 
 const linkPattern = /\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g;
@@ -92,7 +93,7 @@ function ResumePdfDocument({ state, name }) {
             {title === "Professional Summary" || title === "Skills" ? (
               <Text>{renderPdfText(values[0], title)}</Text>
             ) : values.map((entry, index) => (
-              <View key={`${title}-${index}`}>
+              <View key={`${title}-${index}`} style={pdfStyles.entry}>
                 <Text style={pdfStyles.entryTitle}>{entry.title}{entry.organization ? ` | ${entry.organization}` : ""}</Text>
                 <Text style={pdfStyles.muted}>{entry.current ? `${entry.startDate} - Present` : `${entry.startDate} - ${entry.endDate}`}</Text>
                 {(entry.description || "").split(/\n+/).filter(Boolean).map((line, lineIndex) => (
