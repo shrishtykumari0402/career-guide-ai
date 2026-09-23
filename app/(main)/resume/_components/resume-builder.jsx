@@ -67,6 +67,26 @@ const renderPdfText = (text, keyPrefix) => {
   return parts.length ? parts : text || "";
 };
 
+const removeDuplicateEntries = (entries = []) => {
+  const seen = new Set();
+  return entries.filter((entry) => {
+    const key = [
+      entry.title,
+      entry.organization,
+      entry.startDate,
+      entry.endDate,
+      entry.current,
+      entry.description,
+    ]
+      .map((value) => String(value || "").trim().toLowerCase())
+      .join("|");
+
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+};
+
 function ResumePdfDocument({ state, name }) {
   const contact = state.contactInfo || {};
   const sections = [
@@ -142,6 +162,9 @@ const markdownToResumeState = (content) => {
       else if (line.startsWith("- ")) entry.description += `${entry.description ? "\n" : ""}${line.slice(2)}`;
     }
   });
+  Object.values(entries).forEach((type) => {
+    state[type] = removeDuplicateEntries(state[type]);
+  });
   return state;
 };
 
@@ -160,6 +183,9 @@ const getStoredDraft = () => {
         ...defaultResumeValues.contactInfo,
         ...(parsed?.contactInfo || {}),
       },
+      experience: removeDuplicateEntries(parsed?.experience),
+      education: removeDuplicateEntries(parsed?.education),
+      projects: removeDuplicateEntries(parsed?.projects),
     };
   } catch (error) {
     console.error("Failed to restore resume draft:", error);
@@ -261,9 +287,9 @@ export default function ResumeBuilder({ initialContent }) {
       getContactMarkdown(state),
       summary && `## Professional Summary\n\n${summary}`,
       skillList?.length && `## Skills\n\n${skillList.join("  |  ")}`,
-      entriesToMarkdown(experience, "Work Experience"),
-      entriesToMarkdown(education, "Education"),
-      entriesToMarkdown(projects, "Projects"),
+      entriesToMarkdown(removeDuplicateEntries(experience), "Work Experience"),
+      entriesToMarkdown(removeDuplicateEntries(education), "Education"),
+      entriesToMarkdown(removeDuplicateEntries(projects), "Projects"),
     ]
       .filter(Boolean)
       .join("\n\n");
