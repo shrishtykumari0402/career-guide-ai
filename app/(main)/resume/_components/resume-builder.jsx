@@ -40,15 +40,15 @@ const defaultResumeValues = {
 };
 
 const pdfStyles = StyleSheet.create({
-  page: { padding: 36, fontSize: 10, lineHeight: 1.35, color: "#111827" },
-  name: { fontSize: 20, fontWeight: 700, marginBottom: 6 },
-  contact: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginBottom: 14 },
-  section: { marginBottom: 12 },
-  heading: { fontSize: 13, fontWeight: 700, marginBottom: 5 },
-  entryTitle: { fontSize: 11, fontWeight: 700, marginTop: 5 },
-  muted: { color: "#4b5563" },
+  page: { padding: 34, fontSize: 9.5, lineHeight: 1.28, color: "#111827" },
+  name: { fontSize: 18, fontWeight: 700, marginBottom: 3 },
+  contact: { flexDirection: "row", flexWrap: "wrap", gap: 5, marginBottom: 10, fontSize: 8.5 },
+  section: { marginBottom: 8 },
+  heading: { fontSize: 11, fontWeight: 700, marginBottom: 3, paddingBottom: 2, borderBottom: "1pt solid #111827" },
+  entryTitle: { fontSize: 9.5, fontWeight: 700, marginTop: 3 },
+  muted: { color: "#4b5563", fontSize: 8.5 },
   link: { color: "#2563eb", textDecoration: "underline" },
-  bullet: { marginLeft: 10 },
+  bullet: { marginLeft: 9, marginTop: 1 },
 });
 
 const linkPattern = /\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g;
