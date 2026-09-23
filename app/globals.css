@@ -12,10 +12,10 @@ body {
 
 .resume-preview-shell {
   overflow: auto;
-  padding: 2rem;
+  padding: 1.5rem;
   border: 1px solid hsl(var(--border));
   border-radius: 0.5rem;
-  background: #eef1f4;
+  background: #f3f4f6;
 }
 
 .resume-document {
@@ -23,33 +23,33 @@ body {
   box-sizing: border-box;
   min-height: 1123px;
   margin: 0 auto;
-  padding: 56px 64px;
+  padding: 42px 46px;
   background: #ffffff;
-  color: #17202a;
+  color: #111827;
   box-shadow: 0 12px 35px rgb(15 23 42 / 12%);
   font-family: Arial, Helvetica, sans-serif;
-  font-size: 11px;
-  line-height: 1.45;
+  font-size: 12px;
+  line-height: 1.35;
 }
 
 .resume-document .wmde-markdown {
   min-height: inherit;
   padding: 0;
   background: #ffffff !important;
-  color: #17202a !important;
+  color: #111827 !important;
   font-family: Arial, Helvetica, sans-serif !important;
   font-size: inherit !important;
   line-height: inherit !important;
 }
 
 .resume-document h1 {
-  margin: 0 0 0.2rem;
-  color: #17202a;
+  margin: 0 0 0.1rem;
+  color: #111827;
   font-family: Arial, Helvetica, sans-serif;
-  font-size: 28px;
+  font-size: 25px;
   font-weight: 700;
-  letter-spacing: 0.02em;
-  text-align: center;
+  letter-spacing: 0;
+  text-align: left;
 }
 
 .resume-document .wmde-markdown h1,
@@ -62,49 +62,50 @@ body {
 }
 
 .resume-document .wmde-markdown a {
-  color: #17202a !important;
+  color: #1455cc !important;
+  text-decoration: underline;
 }
 
 .resume-document h1 + p {
-  margin: 0 0 1.25rem;
-  padding-bottom: 0.7rem;
-  border-bottom: 2px solid #17202a;
-  color: #4b5563;
+  margin: 0 0 1rem;
+  padding-bottom: 0;
+  border-bottom: 0;
+  color: #1455cc;
   font-family: Arial, Helvetica, sans-serif;
   font-size: 10px;
-  text-align: center;
+  text-align: left;
 }
 
 .resume-document h2 {
-  margin: 1.1rem 0 0.45rem;
-  padding-bottom: 0.2rem;
-  border-bottom: 1px solid #9ca6b2;
-  color: #17202a;
+  margin: 1rem 0 0.3rem;
+  padding-bottom: 0;
+  border-bottom: 0;
+  color: #111827;
   font-family: Arial, Helvetica, sans-serif;
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  letter-spacing: 0;
+  text-transform: none;
 }
 
 .resume-document h3 {
-  margin: 0.7rem 0 0.05rem;
-  color: #17202a;
+  margin: 0.65rem 0 0.05rem;
+  color: #111827;
   font-family: Arial, Helvetica, sans-serif;
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 700;
 }
 
 .resume-document p {
-  margin: 0.25rem 0;
+  margin: 0.2rem 0;
 }
 
 .resume-document .resume-date {
   display: block;
-  margin-top: 0.05rem;
-  color: #596575;
-  font-size: 10px;
-  font-style: italic;
+  margin-top: 0.1rem;
+  color: #4b5563;
+  font-size: 11px;
+  font-style: normal;
 }
 
 .resume-document h2,
@@ -115,18 +116,13 @@ body {
 }
 
 .resume-document ul {
-  margin: 0.25rem 0 0.55rem;
-  padding-left: 1rem;
+  margin: 0.2rem 0 0.45rem;
+  padding-left: 1.1rem;
 }
 
 .resume-document li {
-  margin: 0.12rem 0;
+  margin: 0.08rem 0;
   padding-left: 0.15rem;
-}
-
-.resume-document h2:nth-of-type(2) + p {
-  color: #273444;
-  font-weight: 500;
 }
 
 .resume-document a {
@@ -231,7 +227,7 @@ body {
 
   .resume-document {
     min-height: auto;
-    padding: 32px 28px;
+    padding: 28px 22px;
   }
 
 }
