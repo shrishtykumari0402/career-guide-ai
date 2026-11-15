@@ -29,6 +29,7 @@ import {
 import useFetch from "@/hooks/use-fetch";
 import { onboardingSchema } from "@/app/lib/schema";
 import { updateUser } from "@/actions/user";
+import { skillHints } from "@/data/skillHints";
 
 const OnboardingForm = ({ industries }) => {
   const router = useRouter();
@@ -74,6 +75,27 @@ const OnboardingForm = ({ industries }) => {
   }, [updateResult, updateLoading]);
 
   const watchIndustry = watch("industry");
+  const watchSubIndustry = watch("subIndustry");
+  const skillHint = skillHints[watchIndustry]?.[watchSubIndustry];
+  const skillExamples = skillHint?.split(", ") ?? [];
+  const currentSkills = watch("skills") || "";
+  const selectedSkills = currentSkills
+    .split(",")
+    .map((skill) => skill.trim().toLowerCase())
+    .filter(Boolean);
+
+  const addSkillExample = (example) => {
+    if (selectedSkills.includes(example.toLowerCase())) return;
+
+    const updatedSkills = currentSkills.trim()
+      ? `${currentSkills.trim()}, ${example}`
+      : example;
+
+    setValue("skills", updatedSkills, {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
+  };
 
   return (
     <div className="flex items-center justify-center bg-background">
@@ -170,12 +192,45 @@ const OnboardingForm = ({ industries }) => {
               <Label htmlFor="skills">Skills</Label>
               <Input
                 id="skills"
-                placeholder="e.g., Python, JavaScript, Project Management"
+                placeholder="Type your skills or choose ideas below"
                 {...register("skills")}
               />
               <p className="text-sm text-muted-foreground">
-                Separate multiple skills with commas
+                Enter skills you have, separated by commas.
               </p>
+              {skillExamples.length > 0 && (
+                <div className="space-y-3 rounded-lg border bg-muted/40 p-3">
+                  <div>
+                    <p className="text-sm font-medium">
+                      Skill ideas for {watchSubIndustry}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Click an idea to add it. These are suggestions, not
+                      requirements.
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {skillExamples.map((example) => {
+                      const isSelected = selectedSkills.includes(
+                        example.toLowerCase()
+                      );
+
+                      return (
+                        <Button
+                          key={example}
+                          type="button"
+                          size="sm"
+                          variant={isSelected ? "secondary" : "outline"}
+                          disabled={isSelected}
+                          onClick={() => addSkillExample(example)}
+                        >
+                          {example}
+                        </Button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
               {errors.skills && (
                 <p className="text-sm text-red-500">{errors.skills.message}</p>
               )}
