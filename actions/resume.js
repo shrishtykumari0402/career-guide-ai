@@ -6,7 +6,26 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { revalidatePath } from "next/cache";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+const model = genAI.getGenerativeModel({ model: "gemini-3.8-flash" }); // ← changed from 3.6-flash
+
+// Retry helper for transient Gemini errors (503 overload, etc.)
+async function generateContentWithRetry(prompt, retries = 4, delay = 2000) { // ← retries 2→4, delay 1000→2000
+  for (let i = 0; i <= retries; i++) {
+    try {
+      return await model.generateContent(prompt);
+    } catch (err) {
+      const isRetryable =
+        err.message?.includes("503") ||
+        err.message?.includes("overloaded") ||
+        err.status === 503;
+      if (isRetryable && i < retries) {
+        await new Promise((r) => setTimeout(r, delay * (i + 1)));
+        continue;
+      }
+      throw err;
+    }
+  }
+}
 
 export async function saveResume(content) {
   const { userId } = await auth();
@@ -87,7 +106,7 @@ export async function improveWithAI({ current, type }) {
   `;
 
   try {
-    const result = await model.generateContent(prompt);
+    const result = await generateContentWithRetry(prompt);
     const response = result.response;
     const improvedContent = response.text().trim();
     return improvedContent;

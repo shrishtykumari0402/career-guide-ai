@@ -88,7 +88,7 @@ export default function ResumeBuilder({ initialContent }) {
     if (contactInfo.mobile) parts.push(`📱 ${contactInfo.mobile}`);
     if (contactInfo.linkedin)
       parts.push(`💼 [LinkedIn](${contactInfo.linkedin})`);
-    if (contactInfo.twitter) parts.push(`🐦 [Twitter](${contactInfo.twitter})`);
+    if (contactInfo.github) parts.push(`💻 [GitHub](${contactInfo.github})`);
 
     return parts.length > 0
       ? `## <div align="center">${user.fullName}</div>
@@ -239,17 +239,15 @@ export default function ResumeBuilder({ initialContent }) {
                   )}
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">
-                    Twitter/X Profile
-                  </label>
+                  <label className="text-sm font-medium">GitHub Profile</label>
                   <Input
-                    {...register("contactInfo.twitter")}
+                    {...register("contactInfo.github")}
                     type="url"
-                    placeholder="https://twitter.com/your-handle"
+                    placeholder="https://github.com/your-username"
                   />
-                  {errors.contactInfo?.twitter && (
+                  {errors.contactInfo?.github && (
                     <p className="text-sm text-red-500">
-                      {errors.contactInfo.twitter.message}
+                      {errors.contactInfo.github.message}
                     </p>
                   )}
                 </div>
@@ -401,7 +399,7 @@ export default function ResumeBuilder({ initialContent }) {
               preview={resumeMode}
             />
           </div>
-          <div className="hidden">
+          <div style={{ position: "absolute", left: "-9999px" }}>
             <div id="resume-pdf">
               <MDEditor.Markdown
                 source={previewContent}

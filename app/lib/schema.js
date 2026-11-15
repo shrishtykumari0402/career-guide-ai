@@ -31,13 +31,13 @@ export const contactSchema = z.object({
   email: z.string().email("Invalid email address"),
   mobile: z.string().optional(),
   linkedin: z.string().optional(),
-  twitter: z.string().optional(),
+  github: z.string().optional(),
 });
 
 export const entrySchema = z
   .object({
     title: z.string().min(1, "Title is required"),
-    organization: z.string().min(1, "Organization is required"),
+    organization: z.string().optional(),
     startDate: z.string().min(1, "Start date is required"),
     endDate: z.string().optional(),
     description: z.string().min(1, "Description is required"),

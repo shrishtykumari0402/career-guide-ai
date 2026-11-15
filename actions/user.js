@@ -5,6 +5,22 @@ import { auth } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
 import { generateAIInsights } from "./dashboard";
 
+// Retry helper for transient Gemini 503s
+async function generateAIInsightsWithRetry(industry, retries = 2, delay = 1000) {
+  for (let i = 0; i <= retries; i++) {
+    try {
+      return await generateAIInsights(industry);
+    } catch (err) {
+      const is503 = err.message?.includes("503") || err.message?.includes("overloaded");
+      if (is503 && i < retries) {
+        await new Promise((r) => setTimeout(r, delay * (i + 1)));
+        continue;
+      }
+      throw err;
+    }
+  }
+}
+
 export async function updateUser(data) {
   const { userId } = await auth();
   if (!userId) throw new Error("Unauthorized");
@@ -16,6 +32,22 @@ export async function updateUser(data) {
   if (!user) throw new Error("User not found");
 
   try {
+    const existingIndustryInsight = await db.industryInsight.findUnique({
+      where: { industry: data.industry },
+    });
+
+    // AI insights — best-effort. If Gemini fails, insights stays null
+    // and the transaction below just skips creating an industryInsight.
+    let insights = null;
+    if (!existingIndustryInsight) {
+      try {
+        insights = await generateAIInsightsWithRetry(data.industry);
+      } catch (aiError) {
+        console.error("Gemini insights failed (non-fatal):", aiError.message);
+        insights = null;
+      }
+    }
+
     // Start a transaction to handle both operations
     const result = await db.$transaction(
       async (tx) => {
@@ -27,10 +59,8 @@ export async function updateUser(data) {
         });
 
         // If industry doesn't exist, create it with default values
-        if (!industryInsight) {
-          const insights = await generateAIInsights(data.industry);
-
-          industryInsight = await db.industryInsight.create({
+        if (!industryInsight && insights) {
+          industryInsight = await tx.industryInsight.create({
             data: {
               industry: data.industry,
               ...insights,
@@ -60,7 +90,7 @@ export async function updateUser(data) {
     );
 
     revalidatePath("/");
-    return result.user;
+    return { success: true, user: result.updatedUser };
   } catch (error) {
     console.error("Error updating user and industry:", error.message);
     throw new Error("Failed to update profile");

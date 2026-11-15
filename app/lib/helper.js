@@ -9,7 +9,14 @@ export function entriesToMarkdown(entries, type) {
         const dateRange = entry.current
           ? `${entry.startDate} - Present`
           : `${entry.startDate} - ${entry.endDate}`;
-        return `### ${entry.title} @ ${entry.organization}\n${dateRange}\n\n${entry.description}`;
+
+        const bulletPoints = entry.description
+          .split(/\n+/)
+          .filter(Boolean)
+          .map((point) => `• ${point.trim()}`)
+          .join("\n");
+
+        return `### ${entry.title}${entry.organization ? ` @ ${entry.organization}` : ""}\n${dateRange}\n\n${bulletPoints}`;
       })
       .join("\n\n")
   );
